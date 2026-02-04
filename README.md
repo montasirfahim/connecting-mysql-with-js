@@ -50,4 +50,4 @@ npm start
 node index.js
 ```
 
-Open http://localhost:3000 and register users. The app connects to MySQL on port 3307 by default (see `.env.example`).
+Open http://localhost:3000 and register users. The app connects to MySQL on port 3306 by default (see `.env.example`).
