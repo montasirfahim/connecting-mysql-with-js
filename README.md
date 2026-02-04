@@ -11,6 +11,7 @@ Prereqs:
 
 Details Guideline: Find the pdf file inside this repository
 - Guideline-MySQL-NodeJs.pdf
+- [Live Documentation](https://montasirfahim.github.io/connecting-mysql-with-js/guideline)
 
 Setup:
 
