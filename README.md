@@ -6,7 +6,11 @@ Features:
 
 Prereqs:
 - Node.js installed
-- MySQL server running (you said it's on port 3307)
+- MySQL server running (Default port on 3306 OR port on 3307)
+
+
+Details Guideline: Find the pdf file inside this repository
+- Guideline-MySQL-NodeJs.pdf
 
 Setup:
 
@@ -16,10 +20,10 @@ Setup:
 npm install
 ```
 
-2. Create the database and table (replace `-u root` and `-p` with your credentials). This uses port 3307:
+2. Create the database and table (replace `-u root` and `-p` with your credentials). This uses port 3306:
 
 ```bash
-mysql -u root -P 3307 -p -e "CREATE DATABASE IF NOT EXISTS myappdb; USE myappdb; CREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100) NOT NULL, email VARCHAR(255) NOT NULL UNIQUE, password VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
+mysql -u root -P 3306 -p -e "CREATE DATABASE IF NOT EXISTS myappdb; USE myappdb; CREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100) NOT NULL, email VARCHAR(255) NOT NULL UNIQUE, password VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
 ```
 
 Or, run the mysql client then paste the SQL:
