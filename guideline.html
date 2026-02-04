@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Guideline — MySQL + Node.js (Simple User App)</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;color:#111;line-height:1.4;padding:28px;}
+    h1,h2{color:#0b3d91}
+    pre{background:#f4f6fb;padding:12px;border-radius:6px;overflow:auto}
+    code{background:#f3f4f6;padding:2px 6px;border-radius:4px}
+    .section{margin-bottom:18px}
+    ul{margin-top:6px}
+    .note{background:#fffbe6;border-left:4px solid #f59e0b;padding:10px;border-radius:4px}
+    footer{margin-top:28px;font-size:12px;color:#666}
+  </style>
+</head>
+<body>
+  <h1>Guideline — Connect MySQL with JavaScript (Node.js)</h1>
+  <p>A step-by-step guide to build a simple user registration app using Node.js, Express, MySQL and EJS. Readers will learn how to connect to MySQL, run queries from JavaScript, and render a simple UI.</p>
+
+  <div class="section">
+    <h2>Prerequisites</h2>
+    <ul>
+      <li>Node.js (v16+ recommended)</li>
+      <li>MySQL server running (this guide uses port <code>3307</code> as an example)</li>
+      <li>Basic terminal and editor knowledge</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Project Overview & Files</h2>
+    <p>We'll create a small Express app with these responsibilities:</p>
+    <ul>
+      <li>Serve registration form and users list (EJS views)</li>
+      <li>Connect to MySQL using <code>mysql2</code> promise API</li>
+      <li>Hash passwords with <code>bcryptjs</code></li>
+      <li>Serve a small stylesheet from <code>public/</code></li>
+    </ul>
+    <p>Important files readers should review:</p>
+    <ul>
+      <li><code>index.js</code> — Express server and routes</li>
+      <li><code>db.js</code> — MySQL pool and connection logic</li>
+      <li><code>views/index.ejs</code> &amp; <code>views/users.ejs</code> — templates</li>
+      <li><code>public/styles.css</code> — UI styles</li>
+      <li><code>.env</code> — environment variables (DB credentials)</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Step 1 — Create project and install packages</h2>
+    <p>From PowerShell or terminal:</p>
+    <pre><code>mkdir MySqlJsApp
+cd MySqlJsApp
+npm init -y
+npm install express ejs mysql2 bcryptjs dotenv</code></pre>
+  </div>
+
+  <div class="section">
+    <h2>Step 2 — Create database and table</h2>
+    <p>Use the MySQL client (this example uses port <code>3307</code>):</p>
+    <pre>
+      <code>mysql -u root -P 3307 -p -e "CREATE DATABASE IF NOT EXISTS myappdb; 
+      USE myappdb; 
+      CREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT PRIMARY KEY, 
+      name VARCHAR(100) NOT NULL, email VARCHAR(255) NOT NULL UNIQUE, 
+      password VARCHAR(255) NOT NULL, 
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"</code>
+    </pre>
+  </div>
+
+  <div class="section">
+    <h2>Step 3 — (Recommended) Create an app DB user</h2>
+    <pre><code>mysql -u root -P 3307 -p -e "CREATE USER 'appuser'@'localhost' 
+      IDENTIFIED BY 'StrongPass123'; GRANT ALL PRIVILEGES ON myappdb.* 
+      TO 'appuser'@'localhost'; FLUSH PRIVILEGES;"</code></pre>
+    <p class="note">Use a stronger password in production and restrict privileges appropriately.</p>
+  </div>
+
+  <div class="section">
+    <h2>Step 4 — Environment variables</h2>
+    <p>Create a <code>.env</code> file in project root (do not commit this file):</p>
+    <pre><code>DB_HOST=localhost
+DB_PORT=3307
+DB_USER=appuser
+DB_PASSWORD=StrongPass123
+DB_NAME=myappdb
+PORT=3000</code></pre>
+    <p>The app uses <code>dotenv</code> to load these values.</p>
+  </div>
+
+  <div class="section">
+    <h2>Step 5 — DB connector (<code>db.js</code>)</h2>
+    <p>Use <code>mysql2/promise</code> and a connection pool. Example code:</p>
+    <pre><code>const mysql = require('mysql2/promise');
+require('dotenv').config();
+
+const pool = mysql.createPool({
+  host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT),
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  connectionLimit: 10
+});
+
+module.exports = pool;</code></pre>
+  </div>
+
+  <div class="section">
+    <h2>Step 6 — Express server and routes (<code>index.js</code>)</h2>
+    <p>Main points:</p>
+    <ul>
+      <li>Load <code>dotenv</code>, create Express app, set EJS view engine.</li>
+      <li>Serve static files from <code>public/</code> for CSS.</li>
+      <li>
+        <code>POST /register</code> hashes the password and inserts into DB using parameterized query.
+      </li>
+      <li><code>GET /users</code> queries and renders the users list.</li>
+    </ul>
+    <pre><code>app.post('/register', async (req, res) =&gt; {
+  const { name, email, password } = req.body;
+  const hashed = await bcrypt.hash(password, 10);
+  await pool.execute('INSERT INTO users (name, email, password) 
+  VALUES (?, ?, ?)', [name, email, hashed]);
+  res.redirect('/users');
+});</code></pre>
+  </div>
+
+  <div class="section">
+    <h2>Step 7 — Views & UI</h2>
+    <p>Templates are EJS files in <code>views/</code>. EJS basics:</p>
+    <ul>
+      <li><code>&lt;% code %&gt;</code> — run JS without output</li>
+      <li><code>&lt;%= value %&gt;</code> — escaped output</li>
+    </ul>
+    <p>We added a simple <code>public/styles.css</code> for a modern look.</p>
+  </div>
+
+  <div class="section">
+    <h2>Step 8 — Start the app</h2>
+    <pre><code>npm install
+npm start
+# open http://localhost:3000</code></pre>
+  </div>
+
+  <div class="section">
+    <h2>Troubleshooting</h2>
+    <p><strong>Access denied for user 'root'@'localhost' (using password: NO)</strong></p>
+    <p>This means Node tried to connect without a password. Fix by creating a proper <code>.env</code> with <code>DB_USER</code> and <code>DB_PASSWORD</code>, then restart the server.</p>
+
+    <p><strong>ER_DUP_ENTRY</strong></p>
+    <p>Caused by inserting a duplicate value into a UNIQUE column (e.g., email). Either change the email or handle duplicates in code.</p>
+  </div>
+
+  <div class="section">
+    <h2>Security & Best Practices (brief)</h2>
+    <ul>
+      <li>Never commit <code>.env</code> into version control.</li>
+      <li>Hash passwords (we use <code>bcryptjs</code>).</li>
+      <li>Use parameterized queries to avoid SQL injection.</li>
+      <li>Create a dedicated DB user with least privileges for the app.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Future Scope</h2>
+    <ul>
+      <li>Add login and sessions with <code>express-session</code>.</li>
+      <li>Add client-side validation and nice success messages.</li>
+      <li>Add pagination to the users list.</li>
+      <li>Write unit tests for DB modules (use a separate test DB).</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Cloning Instruction - (If you do not want to create this project manually from scratch)</h2>
+    <p>After cloning this GitHub repository, you can run the following commands to get the project running locally. Commands assume Windows PowerShell (replace the git URL with your repo URL). If using macOS/Linux, use <code>cp</code> instead of <code>copy</code> for the <code>.env</code> step.</p>
+    <pre><code>git clone https://github.com/your-username/your-repo.git
+cd your-repo
+npm install
+
+# Create the database and table (MySQL on port 3307)
+mysql -u root -P 3307 -p -e "CREATE DATABASE IF NOT EXISTS myappdb; 
+USE myappdb; 
+CREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT 
+PRIMARY KEY, name VARCHAR(100) NOT NULL, email VARCHAR(255) NOT NULL UNIQUE, 
+password VARCHAR(255) NOT NULL, 
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
+
+# Create an app DB user and grant privileges
+mysql -u root -P 3307 -p -e "CREATE USER 'appuser'@'localhost' 
+IDENTIFIED BY 'YourStrongPassword'; GRANT ALL PRIVILEGES ON myappdb.* 
+TO 'appuser'@'localhost'; FLUSH PRIVILEGES;"
+
+# Copy example environment file and edit credentials
+copy .env.example .env
+# (Windows) then open .env in an editor and set DB_PASSWORD
+# (macOS/Linux) use: cp .env.example .env
+
+# Start the app
+npm start
+# Open http://localhost:3000 in the browser</code></pre>
+    <p class="note">Remember to update <code>.env</code> with the correct <code>DB_USER</code> and <code>DB_PASSWORD</code> before starting the app.</p>
+  </div>
+
+  <footer>
+    <p>Generated documentation — follow the steps in order. For automatic PDF creation run <code>npm run make-pdf</code> after installing dependencies.</p>
+  </footer>
+</body>
+</html>
